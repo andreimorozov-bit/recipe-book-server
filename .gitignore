@@ -36,3 +36,7 @@ lerna-debug.log*
 # Env
 *.env
 .env
+.env.stage.dev
+.env.stage.prod
+
+docker-compose.yml
