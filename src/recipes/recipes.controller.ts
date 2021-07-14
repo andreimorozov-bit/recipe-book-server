@@ -37,4 +37,18 @@ export class RecipesController {
   getAll(@GetUser() user: User): Promise<Recipe[]> {
     return this.recipesService.getAll(user);
   }
+
+  @Post(':id/edit')
+  updateRecipe(
+    @Body() updateRecipeDto: CreateRecipeDto,
+    @Param('id') id: string,
+    @GetUser() user: User,
+  ): Promise<Recipe> {
+    return this.recipesService.updateRecipe(id, updateRecipeDto, user);
+  }
+
+  @Delete(':id')
+  deleteRecipe(@Param('id') id: string, @GetUser() user: User): Promise<void> {
+    return this.recipesService.deleteRecipe(id, user);
+  }
 }

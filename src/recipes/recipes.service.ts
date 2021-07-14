@@ -34,15 +34,39 @@ export class RecipesService {
 
   async getById(id: string, user: User): Promise<Recipe> {
     const query = this.recipesRepository.createQueryBuilder('recipe');
-
     query.where({ user });
-
     query.andWhere('(recipe.id = :id)', { id: id });
     const recipe = await query.getOne();
     if (!recipe) {
       throw new NotFoundException('Recipe not found');
     }
-
     return recipe;
+  }
+
+  async updateRecipe(
+    id: string,
+    updateRecipeDto: CreateRecipeDto,
+    user: User,
+  ): Promise<Recipe> {
+    let recipe = await this.recipesRepository.findOne({
+      where: { id, user },
+    });
+    if (!recipe) {
+      throw new NotFoundException('Recipe not found');
+    }
+    recipe = {
+      ...recipe,
+      ...updateRecipeDto,
+    };
+    const response = await this.recipesRepository.save(recipe);
+
+    return response;
+  }
+
+  async deleteRecipe(id: string, user: User): Promise<void> {
+    const result = await this.recipesRepository.delete({ id, user });
+    if (result.affected === 0) {
+      throw new NotFoundException('Recipe not found');
+    }
   }
 }

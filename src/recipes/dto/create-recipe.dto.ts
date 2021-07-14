@@ -22,4 +22,6 @@ export class CreateRecipeDto {
   description: string;
   ingredients: Ingredient[];
   category: string;
+  rating: number;
+  servings: number;
 }
