@@ -34,6 +34,14 @@ export class RecipesService {
       });
     }
 
+    if (getRecipesDto?.search) {
+      query.andWhere('(LOWER(recipe.title) LIKE LOWER(:search))', {
+        search: `%${getRecipesDto.search}%`,
+      });
+    }
+
+    query.orderBy('recipe.title', 'ASC');
+
     const recipes = await query.getMany();
 
     return recipes;
