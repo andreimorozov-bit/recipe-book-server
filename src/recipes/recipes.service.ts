@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import * as fs from 'fs';
 import { User } from 'src/auth/user.entity';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { GetRecipesDto } from './dto/get-recipes.dto';
@@ -17,10 +18,9 @@ export class RecipesService {
     createRecipeDto: CreateRecipeDto,
     user: User,
   ): Promise<Recipe> {
-    console.log(createRecipeDto.title);
     const recipe = this.recipesRepository.create({ ...createRecipeDto, user });
     const savedRecipe = await this.recipesRepository.save(recipe);
-    console.log(recipe.title);
+
     return savedRecipe;
   }
 
@@ -40,7 +40,16 @@ export class RecipesService {
       });
     }
 
-    query.orderBy('recipe.title', 'ASC');
+    if (getRecipesDto?.orderBy) {
+      const orderBy = getRecipesDto.orderBy;
+      const direction = orderBy === 'rating' ? 'DESC' : 'ASC';
+      query.orderBy(`recipe.${orderBy}`, `${direction}`);
+      query.addOrderBy('recipe.rating', 'DESC');
+    } else {
+      query.orderBy('recipe.title', 'ASC');
+      query.addOrderBy('recipe.rating', 'DESC');
+    }
+    query.addOrderBy('recipe.title', 'ASC');
 
     const recipes = await query.getMany();
 
@@ -69,6 +78,11 @@ export class RecipesService {
     if (!recipe) {
       throw new NotFoundException('Recipe not found');
     }
+
+    if (recipe.imageName !== updateRecipeDto.imageName) {
+      fs.unlinkSync(`./uploads/recipeimages/${recipe.imageName}`);
+    }
+
     recipe = {
       ...recipe,
       ...updateRecipeDto,

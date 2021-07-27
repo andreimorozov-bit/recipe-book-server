@@ -29,4 +29,7 @@ export class Recipe {
   @ManyToOne((type) => User, (user) => user.recipes, { eager: false })
   @Exclude({ toPlainOnly: true })
   user: User;
+
+  @Column({ name: 'image_name', nullable: true })
+  imageName: string;
 }

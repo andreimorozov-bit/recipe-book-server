@@ -24,4 +24,5 @@ export class CreateRecipeDto {
   category: string;
   rating: number;
   servings: number;
+  imageName?: string;
 }

@@ -7,7 +7,14 @@ import {
   Delete,
   Body,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
+  Res,
 } from '@nestjs/common';
+import { Request, Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { v4 as uuid } from 'uuid';
+import { diskStorage, memoryStorage, Multer } from 'multer';
 import { AuthGuard } from '@nestjs/passport';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { User } from 'src/auth/user.entity';
@@ -15,18 +22,23 @@ import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { Recipe } from './recipe.entity';
 import { RecipesService } from './recipes.service';
 import { GetRecipesDto } from './dto/get-recipes.dto';
+import { ImageUpload } from 'src/common/ImageUpload';
+import { join } from 'path';
+import * as fs from 'fs';
+import * as sharp from 'sharp';
 
 @Controller('recipes')
-@UseGuards(AuthGuard())
 export class RecipesController {
   constructor(private readonly recipesService: RecipesService) {}
 
   @Get(':id')
+  @UseGuards(AuthGuard())
   getById(@Param('id') id: string, @GetUser() user: User): Promise<Recipe> {
     return this.recipesService.getById(id, user);
   }
 
   @Get()
+  @UseGuards(AuthGuard())
   getRecipes(
     @GetUser() user: User,
     @Query() getRecipesDto: GetRecipesDto,
@@ -35,6 +47,7 @@ export class RecipesController {
   }
 
   @Post(':id/edit')
+  @UseGuards(AuthGuard())
   updateRecipe(
     @Body() updateRecipeDto: CreateRecipeDto,
     @Param('id') id: string,
@@ -44,15 +57,46 @@ export class RecipesController {
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard())
   deleteRecipe(@Param('id') id: string, @GetUser() user: User): Promise<void> {
     return this.recipesService.deleteRecipe(id, user);
   }
 
   @Post()
+  @UseGuards(AuthGuard())
   create(
     @Body() createRecipeDto: CreateRecipeDto,
     @GetUser() user: User,
   ): Promise<Recipe> {
     return this.recipesService.createRecipe(createRecipeDto, user);
+  }
+
+  @Post('upload')
+  @UseGuards(AuthGuard())
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: './uploads/recipeimages',
+        filename: ImageUpload.customFileName,
+      }),
+    }),
+  )
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+    console.log(file);
+    const newFilename = `${uuid()}.jpg`;
+    const result = await sharp(file.path)
+      .resize(500, 500)
+      .jpeg({ quality: 90 })
+      .toFile(`./uploads/recipeimages/${newFilename}`);
+
+    fs.unlinkSync(file.path);
+    return { newFilename };
+  }
+
+  @Get('images/:imagename')
+  getImege(@Param('imagename') imagename: string, @Res() res: Response) {
+    return res.sendFile(
+      join(process.cwd(), 'uploads/recipeimages/' + imagename),
+    );
   }
 }
