@@ -7,6 +7,7 @@ import { RecipesModule } from './recipes/recipes.module';
 import { AuthModule } from './auth/auth.module';
 import * as Joi from '@hapi/joi';
 import { configValidationSchema } from './config.schema';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { configValidationSchema } from './config.schema';
     }),
     RecipesModule,
     AuthModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

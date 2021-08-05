@@ -1,7 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as fs from 'fs';
+import * as sharp from 'sharp';
 import { User } from 'src/auth/user.entity';
+import { FilesService } from 'src/files/files.service';
 import { CreateRecipeDto } from './dto/create-recipe.dto';
 import { GetRecipesDto } from './dto/get-recipes.dto';
 import { Recipe } from './recipe.entity';
@@ -12,6 +14,7 @@ export class RecipesService {
   constructor(
     @InjectRepository(RecipesRepository)
     private recipesRepository: RecipesRepository,
+    private readonly filesService: FilesService,
   ) {}
 
   async createRecipe(
@@ -58,8 +61,10 @@ export class RecipesService {
 
   async getById(id: string, user: User): Promise<Recipe> {
     const query = this.recipesRepository.createQueryBuilder('recipe');
+    query.leftJoinAndSelect('recipe.image', 'image');
     query.where({ user });
     query.andWhere('(recipe.id = :id)', { id: id });
+    query;
     const recipe = await query.getOne();
     if (!recipe) {
       throw new NotFoundException('Recipe not found');
@@ -79,9 +84,9 @@ export class RecipesService {
       throw new NotFoundException('Recipe not found');
     }
 
-    if (recipe.imageName !== updateRecipeDto.imageName) {
-      fs.unlinkSync(`./uploads/recipeimages/${recipe.imageName}`);
-    }
+    // if (recipe.imageName !== updateRecipeDto.imageName) {
+    //   fs.unlinkSync(`./uploads/recipeimages/${recipe.imageName}`);
+    // }
 
     recipe = {
       ...recipe,
@@ -96,6 +101,52 @@ export class RecipesService {
     const result = await this.recipesRepository.delete({ id, user });
     if (result.affected === 0) {
       throw new NotFoundException('Recipe not found');
+    }
+  }
+
+  async uploadImage(
+    recipeId: string,
+    user: User,
+    imageBuffer: Buffer,
+    filename: string,
+  ) {
+    const recipe = await this.getById(recipeId, user);
+
+    if (recipe.image) {
+      await this.recipesRepository.update(recipeId, { ...recipe, image: null });
+      await this.filesService.deletePublicFile(recipe.image.id);
+    }
+    const resizedImageBuffer = await sharp(imageBuffer)
+      .resize({
+        width: 500,
+        height: 500,
+      })
+      .jpeg()
+      .toBuffer();
+
+    const image = await this.filesService.uploadPublicFile(
+      resizedImageBuffer,
+      filename,
+    );
+
+    await this.recipesRepository.update(recipeId, {
+      ...recipe,
+      image,
+    });
+    return image;
+  }
+
+  async getImage(fileId: string) {
+    const file = await this.filesService.getPublicFile(fileId);
+    return file;
+  }
+
+  async deleteImage(recipeId: string, user: User) {
+    const recipe = await this.getById(recipeId, user);
+    const imageId = recipe.image?.id;
+    if (imageId) {
+      await this.recipesRepository.update(recipeId, { ...recipe, image: null });
+      await this.filesService.deletePublicFile(imageId);
     }
   }
 }

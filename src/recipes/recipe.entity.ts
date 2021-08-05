@@ -1,6 +1,14 @@
 import { Exclude } from 'class-transformer';
 import { User } from 'src/auth/user.entity';
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { PublicFile } from 'src/files/publicFile.entity';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Ingredient } from './models/ingredient';
 
 @Entity()
@@ -32,4 +40,8 @@ export class Recipe {
 
   @Column({ name: 'image_name', nullable: true })
   imageName: string;
+
+  @JoinColumn()
+  @OneToOne(() => PublicFile, { eager: true, nullable: true })
+  image?: PublicFile;
 }

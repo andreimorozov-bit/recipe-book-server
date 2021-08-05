@@ -39,6 +39,7 @@ export class AuthService {
 
   async signIn(userData: SignInUserDto) {
     try {
+      console.log(userData);
       const user = await this.getUserByEmail(userData.email);
       await this.verifyPassword(userData.password, user.password);
       const payload: JwtPayload = { email: user.email };
@@ -51,6 +52,7 @@ export class AuthService {
   }
 
   async verifyPassword(password: string, hashedPassword: string) {
+    console.log(password);
     const isValidPassword = await bcrypt.compare(password, hashedPassword);
     if (!isValidPassword) {
       throw new HttpException('Invalid credentials', HttpStatus.BAD_REQUEST);

@@ -10,6 +10,7 @@ import {
   UploadedFile,
   UseInterceptors,
   Res,
+  Req,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -71,32 +72,52 @@ export class RecipesController {
     return this.recipesService.createRecipe(createRecipeDto, user);
   }
 
+  // @Post('upload')
+  // @UseGuards(AuthGuard())
+  // @UseInterceptors(
+  //   FileInterceptor('file', {
+  //     storage: diskStorage({
+  //       destination: './uploads/recipeimages',
+  //       filename: ImageUpload.customFileName,
+  //     }),
+  //   }),
+  // )
+
+  // async uploadFile(@UploadedFile() file: Express.Multer.File) {
+  //   console.log(file);
+  //   const newFilename = `${uuid()}.jpg`;
+  //   const result = await sharp(file.path)
+  //     .resize(500, 500)
+  //     .jpeg({ quality: 90 })
+  //     .toFile(`./uploads/recipeimages/${newFilename}`);
+
+  //   fs.unlinkSync(file.path);
+  //   return { newFilename };
+  // }
+
   @Post('upload')
   @UseGuards(AuthGuard())
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads/recipeimages',
-        filename: ImageUpload.customFileName,
-      }),
-    }),
-  )
-  async uploadFile(@UploadedFile() file: Express.Multer.File) {
-    console.log(file);
-    const newFilename = `${uuid()}.jpg`;
-    const result = await sharp(file.path)
-      .resize(500, 500)
-      .jpeg({ quality: 90 })
-      .toFile(`./uploads/recipeimages/${newFilename}`);
-
-    fs.unlinkSync(file.path);
-    return { newFilename };
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadImage(
+    @Body() body,
+    @GetUser() user: User,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    return this.recipesService.uploadImage(
+      body.recipeId,
+      user,
+      file.buffer,
+      file.originalname,
+    );
   }
 
-  @Get('images/:imagename')
-  getImege(@Param('imagename') imagename: string, @Res() res: Response) {
-    return res.sendFile(
-      join(process.cwd(), 'uploads/recipeimages/' + imagename),
-    );
+  @Get('images/:id')
+  async getImage(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const file = await this.recipesService.getImage(id);
+    file.stream.pipe(res);
   }
 }
