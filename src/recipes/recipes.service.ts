@@ -30,6 +30,7 @@ export class RecipesService {
   async getRecipes(user: User, getRecipesDto?: GetRecipesDto) {
     const query = this.recipesRepository.createQueryBuilder('recipe');
 
+    query.leftJoinAndSelect('recipe.image', 'image');
     query.where({ user });
     if (getRecipesDto?.category) {
       query.andWhere('(recipe.category = :category)', {

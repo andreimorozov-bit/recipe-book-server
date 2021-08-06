@@ -39,7 +39,6 @@ export class AuthService {
 
   async signIn(userData: SignInUserDto) {
     try {
-      console.log(userData);
       const user = await this.getUserByEmail(userData.email);
       await this.verifyPassword(userData.password, user.password);
       const payload: JwtPayload = { email: user.email };
